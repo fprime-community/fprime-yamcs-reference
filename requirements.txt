@@ -1,5 +1,10 @@
 # Source tag requirements:
 # -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.1.1/requirements.txt
 
+yamcs-client==1.12.1
+fprime-xtce==0.1.0
+fprime-yamcs==0.1.1
+
 # Local requirements:
 -r ./lib/fprime/requirements.txt
+
