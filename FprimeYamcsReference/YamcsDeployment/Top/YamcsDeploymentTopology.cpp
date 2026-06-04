@@ -65,7 +65,7 @@ void setupTopology(const TopologyState& state) {
     configComponents(state);
     if (state.hostname != nullptr && state.port != 0) {
         const char* hostname = state.hostname;
-        if (strcmp(hostname, "0.0.0.0") == 0) {
+        if (Fw::String(hostname) == Fw::String("0.0.0.0")) {
             hostname = "127.0.0.1";
         }
         comDriver.configureSend(hostname, state.port);
