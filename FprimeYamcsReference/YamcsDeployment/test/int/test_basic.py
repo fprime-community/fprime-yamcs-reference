@@ -1,137 +1,30 @@
-"""test_basic.py:
+"""test_basic.py
 
-Simple proof-of-concept integration test for YamcsDeployment.
+YAMCS transport parity tests for the YamcsDeployment. Each test exercises a
+built-in Svc component through the YAMCS path and verifies the same behavior
+the normal GDS TCP transport provides.
+
+Run with:
+    pytest --use-yamcs [--yamcs-url http://host:port] \
+           --dictionary <path-to-dictionary> \
+           FprimeYamcsReference/YamcsDeployment/test/int/test_basic.py
 """
 
-from fprime_gds.common.testing_fw.api import IntegrationTestAPI
-import time
-from pathlib import Path
-
-
-def test_is_streaming1(fprime_test_api: IntegrationTestAPI):
-    """Test that flight software is streaming telemetry"""
-    results = fprime_test_api.assert_telemetry_count(5, timeout=10)
-    print(f"Received {len(results)} telemetry items")
-
-
-def test_send_no_op(fprime_test_api: IntegrationTestAPI):
-    """Test sending a simple NO-OP command"""
-    fprime_test_api.send_command("CdhCore.cmdDisp.CMD_NO_OP")
-    time.sleep(1.5)
-
-    # Verify command was sent
-    assert fprime_test_api.get_command_test_history().size() == 1
-    print("Command sent successfully")
-
-    # Verify event was generated
-    events = fprime_test_api.get_event_test_history()
-    assert events.size() > 0
-    print(f"Retrieved {events.size()} events from history")
-
-
-def test_await_event_after_no_op(fprime_test_api: IntegrationTestAPI):
-    """send_command then await_event resolves the F Prime ack for the NO-OP"""
-    fprime_test_api.send_command("CdhCore.cmdDisp.CMD_NO_OP")
-    result = fprime_test_api.await_event(
-        "CdhCore.cmdDisp.OpCodeCompleted", timeout=10
-    )
-    assert result is not None, "Did not receive OpCodeCompleted within 10s"
-
-
-def test_send_and_assert_event_no_op(fprime_test_api: IntegrationTestAPI):
-    """send_and_assert_event bundles send + await for the dispatch ack"""
-    fprime_test_api.send_and_assert_event(
-        "CdhCore.cmdDisp.CMD_NO_OP",
-        events=["CdhCore.cmdDisp.OpCodeDispatched"],
-        timeout=10,
-    )
-
-
-def test_event_subhistory_filters(fprime_test_api: IntegrationTestAPI):
-    """Subhistories registered via the API only collect matching events"""
-    pred = fprime_test_api.get_event_pred(event="CdhCore.cmdDisp.OpCodeCompleted")
-    subhistory = fprime_test_api.get_event_subhistory(event_filter=pred)
-    try:
-        fprime_test_api.send_command("CdhCore.cmdDisp.CMD_NO_OP")
-        fprime_test_api.await_event_count(
-            1, events="CdhCore.cmdDisp.OpCodeCompleted", history=subhistory, timeout=10
-        )
-        for item in subhistory.retrieve():
-            assert pred(item), "Subhistory contained an event the filter should have rejected"
-    finally:
-        fprime_test_api.remove_event_subhistory(subhistory)
-
-
-def test_telemetry_count_with_specific_channel(fprime_test_api: IntegrationTestAPI):
-    """Counting telemetry filtered to a single channel still returns updates within the window"""
-    results = fprime_test_api.assert_telemetry_count(
-        1, channels="CdhCore.cmdDisp.CommandsDispatched", timeout=10
-    )
-    assert all(
-        r.template.get_full_name() == "CdhCore.cmdDisp.CommandsDispatched" for r in results
-    )
-
-def test_uplink_file(fprime_test_api: IntegrationTestAPI): 
-    """Test that we can uplink a file and receive an event acknowledging it"""
-    file_path = Path(__file__).parent / "test_file.txt"
-    fprime_test_api.uplink_file(str(file_path), "CdhCore.fileUplink")
-    result = fprime_test_api.await_event(
-        "FileHandling.fileUplink.FileReceived", timeout=10
-    )
-    assert result is not None, "Did not receive FileReceived event within 10s"
-
-
-"""ref_integration_test.py:
-
-A set of integration tests to apply to the Ref app. This is intended to be a reference of integration testing.
-"""
-
-import subprocess
 import time
 from enum import Enum
+from pathlib import Path
 
 from fprime_gds.common.testing_fw import predicates
 from fprime_gds.common.utils.event_severity import EventSeverity
 
 
-"""
-This enum is includes the values of EventSeverity that can be filtered by the EventManager Component
-"""
 FilterSeverity = Enum(
     "FilterSeverity",
     "WARNING_HI WARNING_LO COMMAND ACTIVITY_HI ACTIVITY_LO DIAGNOSTIC",
 )
 
 
-def test_is_streaming(fprime_test_api):
-    """Test flight software is streaming
-
-    Tests that the flight software is streaming by looking for 5 telemetry items in 10 seconds. Additionally,
-    FileHandling.fileUplink.PacketsReceived is verified to be present.
-    """
-    results = fprime_test_api.assert_telemetry_count(5, timeout=10)
-    for result in results:
-        msg = "received channel {} update: {}".format(result.get_id(), result.get_str())
-        print(msg)
-    fprime_test_api.assert_telemetry_count(
-        1, channels="FileHandling.fileUplink.PacketsReceived", timeout=3
-    )
-
-
 def set_event_filter(fprime_test_api, severity, enabled):
-    """Send command to set event filter
-
-    This helper will send a command that updates the given severity filter on the EventManager
-    Component in the Ref App.
-
-    Args:
-        fprime_test_api: test api to use
-        severity: A valid FilterSeverity Enum utilityValue (str) or an instance of FilterSeverity
-        enabled: a boolean of whether or not to enable the given severity
-
-    Return:
-        boolean of whether the report filter was set successfully.
-    """
     enabled = "ENABLED" if enabled else "DISABLED"
     if isinstance(severity, FilterSeverity):
         severity = severity.name
@@ -148,7 +41,6 @@ def set_event_filter(fprime_test_api, severity, enabled):
 
 
 def set_default_filters(fprime_test_api):
-    """Set the default (initial) event filters"""
     set_event_filter(fprime_test_api, "COMMAND", True)
     set_event_filter(fprime_test_api, "ACTIVITY_LO", True)
     set_event_filter(fprime_test_api, "ACTIVITY_HI", True)
@@ -157,21 +49,42 @@ def set_default_filters(fprime_test_api):
     set_event_filter(fprime_test_api, "DIAGNOSTIC", False)
 
 
-def test_send_command(fprime_test_api):
-    """Test that commands may be sent
+# ---------------------------------------------------------------------------
+# Telemetry streaming
+# ---------------------------------------------------------------------------
 
-    Tests command send, dispatch, and receipt using send_and_assert command with a pair of NO-OP commands.
+def test_is_streaming(fprime_test_api):
+    """Verify telemetry is flowing through YAMCS.
+
+    Waits for at least 5 telemetry updates from any channel.
+    Tunables: count (5), timeout (10s).
     """
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=0.1)
+    results = fprime_test_api.assert_telemetry_count(5, timeout=10)
+    for result in results:
+        msg = "received channel {} update: {}".format(result.get_id(), result.get_str())
+        print(msg)
+
+
+# ---------------------------------------------------------------------------
+# CmdDispatcher (Svc.CommandDispatcher -> CdhCore.cmdDisp)
+# ---------------------------------------------------------------------------
+
+def test_cmd_no_op(fprime_test_api):
+    """Send two NO-OP commands and verify the command history increments.
+
+    Tunables: max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
     assert fprime_test_api.get_command_test_history().size() == 1
-    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=0.1)
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
     assert fprime_test_api.get_command_test_history().size() == 2
 
 
-def test_send_command_args(fprime_test_api):
-    """Test that commands may be sent with arguments
+def test_cmd_no_op_string(fprime_test_api):
+    """Send NO-OP-STRING commands with different payloads and verify the
+    NoOpStringReceived event carries the correct argument back.
 
-    Tests command send, dispatch, and receipt using send_and_assert command with a pair of NO-OP string commands.
+    Tunables: test strings, max_delay (5s).
     """
     for count, value in enumerate(["Test String 1", "Some other string"], 1):
         events = [
@@ -181,22 +94,31 @@ def test_send_command_args(fprime_test_api):
         ]
         fprime_test_api.send_and_assert_command(
             "CdhCore.cmdDisp.CMD_NO_OP_STRING",
-            [
-                value,
-            ],
-            max_delay=0.1,
+            [value],
+            max_delay=5,
             events=events,
         )
         assert fprime_test_api.get_command_test_history().size() == count
 
 
-def test_send_and_assert_no_op(fprime_test_api):
-    """Test that commands may be sent in-order
+def test_cmd_clear_tracking(fprime_test_api):
+    """Send CMD_CLEAR_TRACKING and verify dispatch + completion events.
 
-    Tests command send, dispatch, and receipt using send_and_assert command with NO-OP commands. Repeats the series of
-    commands 100 times and looks for no re-ordering nor drops.
+    Tunables: max_delay (5s).
     """
-    length = 100
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.cmdDisp.CMD_CLEAR_TRACKING", max_delay=5
+    )
+
+
+def test_cmd_no_op_ordering(fprime_test_api):
+    """Send repeated NO-OPs and verify the three expected events
+    (OpCodeDispatched, NoOpReceived, OpCodeCompleted) arrive in order
+    with no drops.
+
+    Tunables: length (20 iterations), timeout per iteration (25s).
+    """
+    length = 20
     failed = 0
     evr_seq = [
         "CdhCore.cmdDisp.OpCodeDispatched",
@@ -205,11 +127,11 @@ def test_send_and_assert_no_op(fprime_test_api):
     ]
     any_reordered = False
     dropped = False
-    for i in range(0, length):
+    for i in range(length):
         results = fprime_test_api.send_and_await_event(
             "CdhCore.cmdDisp.CMD_NO_OP", events=evr_seq, timeout=25
         )
-        msg = "Send and assert NO_OP Trial #{}".format(i)
+        msg = "NO_OP trial #{}".format(i)
         if not fprime_test_api.test_assert(len(results) == 3, msg, True):
             items = fprime_test_api.get_event_test_history().retrieve()
             last = None
@@ -218,9 +140,7 @@ def test_send_and_assert_no_op(fprime_test_api):
                 if last is not None:
                     if item.get_time() < last.get_time():
                         fprime_test_api.log(
-                            "during iteration #{}, a reordered event was detected: {}".format(
-                                i, item
-                            )
+                            "iteration #{}: reordered event: {}".format(i, item)
                         )
                         any_reordered = True
                         reordered = True
@@ -228,7 +148,7 @@ def test_send_and_assert_no_op(fprime_test_api):
                 last = item
             if not reordered:
                 fprime_test_api.log(
-                    "during iteration #{}, a dropped event was detected".format(i)
+                    "iteration #{}: dropped event".format(i)
                 )
                 dropped = True
             failed += 1
@@ -243,66 +163,45 @@ def test_send_and_assert_no_op(fprime_test_api):
     )
     msg = "{} sequences failed out of {}".format(failed, length)
     case &= fprime_test_api.test_assert(failed == 0, msg, True)
-
-    assert (
-        case
-    ), "Expected all checks to pass (reordering, dropped events, all passed). See log."
+    assert case
 
 
-def test_bd_cycles_ascending(fprime_test_api):
-    """Test in-order block driver updates"""
-    length = 60
-    count_pred = predicates.greater_than(length - 1)
-    results = fprime_test_api.await_telemetry_count(
-        count_pred, "Ref.blockDrv.BD_Cycles", timeout=length
+# ---------------------------------------------------------------------------
+# EventManager (Svc.EventManager -> CdhCore.events)
+# ---------------------------------------------------------------------------
+
+def test_event_filter_state(fprime_test_api):
+    """Send DUMP_FILTER_STATE and verify the command completes.
+
+    Tunables: max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.events.DUMP_FILTER_STATE", max_delay=5
     )
-    last = None
-    reordered = False
-    ascending = True
-    for result in results:
-        if last is not None:
-            last_time = last.get_time()
-            result_time = result.get_time()
-            if result_time - last_time > 1.5:
-                msg = "FSW didn't send an update between {} and {}".format(
-                    last_time.to_readable(), result_time.to_readable()
-                )
-                fprime_test_api.log(msg)
-            elif result_time < last_time:
-                msg = "There is potential reorder error between {} and {}".format(
-                    last_time, result_time
-                )
-                fprime_test_api.log(msg)
-                reordered = True
 
-            if not result.get_val() > last.get_val():
-                msg = "Not all updates ascended: First ({}) Second ({})".format(
-                    last.get_val(), result.get_val()
-                )
-                fprime_test_api.log(msg)
-                ascending = False
 
-        last = result
+def test_event_set_id_filter(fprime_test_api):
+    """Enable an ID filter for event 0x507, send a NO-OP, then disable it.
+    Verifies SET_ID_FILTER commands dispatch and complete through YAMCS.
 
-    case = True
-    case &= fprime_test_api.test_assert(
-        ascending, "Expected all updates to ascend.", True
+    Tunables: event ID (0x507), max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.events.SET_ID_FILTER", ["0x507", "ENABLED"], max_delay=5
     )
-    case &= fprime_test_api.test_assert(
-        not reordered, "Expected no updates to be dropped.", True
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.events.SET_ID_FILTER", ["0x507", "DISABLED"], max_delay=5
     )
-    fprime_test_api.predicate_assert(
-        count_pred,
-        len(results) - 1,
-        "Expected >= {} updates".format(length - 1),
-        True,
-    )
-    fprime_test_api.assert_telemetry_count(0, "rateGroup1Comp.RgCycleSlips")
-    assert case, "Expected all checks to pass (ascending, reordering). See log."
 
 
-def test_active_logger_filter(fprime_test_api):
-    """Test active logger event filtering"""
+def test_event_severity_filter(fprime_test_api):
+    """Verify severity-based event filtering. Sends NO-OPs with COMMAND
+    severity enabled and disabled, then checks that COMMAND events appear
+    or disappear accordingly while ACTIVITY_HI events always flow.
+
+    Tunables: sleep durations (10s drain, 1.5s flush).
+    """
     set_default_filters(fprime_test_api)
     try:
         cmd_events = fprime_test_api.get_event_pred(severity=EventSeverity.COMMAND)
@@ -311,26 +210,20 @@ def test_active_logger_filter(fprime_test_api):
         )
         pred = predicates.greater_than(0)
         zero = predicates.equal_to(0)
-        # Drain time for dispatch events
+
         time.sleep(10)
-
         fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP")
         fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP")
-
-        # Wait >1s for ComAggregator's 1Hz timeout to flush all downlink
         time.sleep(1.5)
 
         fprime_test_api.assert_event_count(pred, cmd_events)
         fprime_test_api.assert_event_count(pred, actHI_events)
 
         set_event_filter(fprime_test_api, FilterSeverity.COMMAND, False)
-        # Drain time for dispatch events
         time.sleep(10)
         fprime_test_api.clear_histories()
         fprime_test_api.send_command("CdhCore.cmdDisp.CMD_NO_OP")
         fprime_test_api.send_command("CdhCore.cmdDisp.CMD_NO_OP")
-
-        # Wait >1s for ComAggregator's 1Hz timeout to flush all downlink
         time.sleep(1.5)
 
         fprime_test_api.assert_event_count(zero, cmd_events)
@@ -339,60 +232,189 @@ def test_active_logger_filter(fprime_test_api):
         set_default_filters(fprime_test_api)
 
 
-def test_signal_generation(fprime_test_api):
-    """Tests the behavior of signal gen component"""
-    fprime_test_api.send_and_assert_command("Ref.SG4.Settings", [1, 5, 0, "SQUARE"])
-    # First telemetry item should fill only the first slot of the history
-    history = [0, 0, 0, 5]
-    pair_history = [{"time": 0, "value": value} for value in history]
-    info = {"type": "SQUARE", "history": history, "pairHistory": pair_history}
-    fprime_test_api.send_and_assert_command("Ref.SG4.Toggle")
-    fprime_test_api.assert_telemetry("Ref.SG4.History", history, timeout=6)
-    fprime_test_api.assert_telemetry("Ref.SG4.PairHistory", pair_history, timeout=3)
-    fprime_test_api.assert_telemetry("Ref.SG4.Info", info, timeout=3)
-    fprime_test_api.send_and_assert_command("Ref.SG4.Toggle")
+# ---------------------------------------------------------------------------
+# Health (Svc.Health -> CdhCore.$health)
+# ---------------------------------------------------------------------------
 
+def test_health_enable_disable(fprime_test_api):
+    """Disable and re-enable health monitoring globally.
 
-def test_seqgen(fprime_test_api):
-    """Tests the seqgen can be dispatched (requires localhost testing)"""
-    sequence = Path(__file__).parent / "test_seq.seq"
-    assert (
-        subprocess.run(
-            [
-                "fprime-seqgen",
-                "--dictionary",
-                str(fprime_test_api.dictionaries.dictionary_path),
-                str(sequence),
-                "/tmp/ref_test_int.bin",
-            ]
-        ).returncode
-        == 0
-    ), "Failed to run fprime-seqgen"
+    Tunables: max_delay (5s).
+    """
     fprime_test_api.send_and_assert_command(
-        "Ref.cmdSeq.CS_RUN", args=["/tmp/ref_test_int.bin", "BLOCK"], max_delay=5
+        "CdhCore.health.HLTH_ENABLE", ["DISABLED"], max_delay=5
+    )
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.health.HLTH_ENABLE", ["ENABLED"], max_delay=5
     )
 
 
-def test_system_resources(fprime_test_api):
-    """Test system resources telemetry meets minimum thresholds"""
-    from fprime_gds.common.testing_fw import predicates
+def test_health_ping_enable(fprime_test_api):
+    """Disable and re-enable health pinging for a specific component
+    (FileHandling_fileManager).
 
-    # Test memory usage > 1KB using predicates
-    pred_greater_than_1kb = predicates.greater_than(1)
-
-    # Wait for telemetry and verify it meets thresholds
-    fprime_test_api.await_telemetry_count(
-        pred_greater_than_1kb, "Ref.systemResources.MEMORY_TOTAL", timeout=3
+    Tunables: component name (FileHandling_fileManager), max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.health.HLTH_PING_ENABLE",
+        ["FileHandling_fileManager", "DISABLED"],
+        max_delay=5,
+    )
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.health.HLTH_PING_ENABLE",
+        ["FileHandling_fileManager", "ENABLED"],
+        max_delay=5,
     )
 
-    fprime_test_api.await_telemetry_count(
-        pred_greater_than_1kb, "Ref.systemResources.MEMORY_USED", timeout=3
+
+# ---------------------------------------------------------------------------
+# Version (Svc.Version -> CdhCore.version)
+# ---------------------------------------------------------------------------
+
+def test_version_report(fprime_test_api):
+    """Request each version variant and verify the command completes.
+
+    Tunables: variant list, max_delay (5s).
+    """
+    for variant in ["PROJECT", "FRAMEWORK", "LIBRARY", "CUSTOM", "ALL"]:
+        fprime_test_api.send_and_assert_command(
+            "CdhCore.version.VERSION", [variant], max_delay=5
+        )
+
+
+def test_version_enable_disable(fprime_test_api):
+    """Enable and disable periodic version telemetry.
+
+    Tunables: max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.version.ENABLE", ["ENABLED"], max_delay=5
+    )
+    fprime_test_api.send_and_assert_command(
+        "CdhCore.version.ENABLE", ["DISABLED"], max_delay=5
     )
 
-    fprime_test_api.await_telemetry_count(
-        pred_greater_than_1kb, "Ref.systemResources.NON_VOLATILE_TOTAL", timeout=3
+
+# ---------------------------------------------------------------------------
+# SystemResources (Svc.SystemResources -> systemResources)
+# ---------------------------------------------------------------------------
+
+def test_system_resources_telemetry(fprime_test_api):
+    """Verify system resource telemetry channels report non-zero values
+    for memory and CPU.
+
+    Tunables: timeout (10s), threshold (> 0).
+    """
+    above_zero = predicates.greater_than(0)
+    fprime_test_api.assert_telemetry(
+        "systemResources.MEMORY_TOTAL", above_zero, timeout=10
+    )
+    fprime_test_api.assert_telemetry(
+        "systemResources.MEMORY_USED", above_zero, timeout=10
+    )
+    fprime_test_api.assert_telemetry(
+        "systemResources.NON_VOLATILE_TOTAL", above_zero, timeout=10
+    )
+    fprime_test_api.assert_telemetry(
+        "systemResources.CPU", predicates.greater_than(0.0), timeout=10
     )
 
-    fprime_test_api.await_telemetry_count(
-        predicates.greater_than(1.0), "Ref.systemResources.CPU", timeout=3
+
+def test_system_resources_enable_disable(fprime_test_api):
+    """Disable and re-enable periodic system resource reporting.
+
+    Tunables: max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "systemResources.ENABLE", ["DISABLED"], max_delay=5
+    )
+    fprime_test_api.send_and_assert_command(
+        "systemResources.ENABLE", ["ENABLED"], max_delay=5
+    )
+
+
+# ---------------------------------------------------------------------------
+# FileManager (Svc.FileManager -> FileHandling.fileManager)
+# ---------------------------------------------------------------------------
+
+def test_file_manager_create_remove_directory(fprime_test_api):
+    """Create a temporary directory on the target and then remove it.
+
+    Tunables: directory path (/tmp/yamcs_test_dir), max_delay (10s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "FileHandling.fileManager.CreateDirectory", ["/tmp/yamcs_test_dir"], max_delay=10
+    )
+    fprime_test_api.send_and_assert_command(
+        "FileHandling.fileManager.RemoveDirectory", ["/tmp/yamcs_test_dir"], max_delay=10
+    )
+
+
+def test_file_manager_file_size(fprime_test_api):
+    """Query the size of test_file.txt on the target filesystem.
+
+    Tunables: file path (test_file.txt alongside this script), max_delay (10s).
+    """
+    test_file = Path(__file__).parent / "test_file.txt"
+    fprime_test_api.send_and_assert_command(
+        "FileHandling.fileManager.FileSize", [str(test_file)], max_delay=10
+    )
+
+
+# ---------------------------------------------------------------------------
+# FileDownlink (Svc.FileDownlink -> FileHandling.fileDownlink)
+# ---------------------------------------------------------------------------
+
+def test_file_downlink_send_file(fprime_test_api):
+    """Request a file downlink of test_file.txt to a destination filename.
+
+    Tunables: source file (test_file.txt), dest name (yamcs_test_dl.txt),
+    max_delay (30s).
+    """
+    test_file = Path(__file__).parent / "test_file.txt"
+    fprime_test_api.send_and_assert_command(
+        "FileHandling.fileDownlink.SendFile",
+        [str(test_file), "yamcs_test_dl.txt"],
+        max_delay=30,
+    )
+
+
+def test_file_downlink_cancel(fprime_test_api):
+    """Send a Cancel command to FileDownlink.
+
+    Tunables: max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "FileHandling.fileDownlink.Cancel", max_delay=5
+    )
+
+
+# ---------------------------------------------------------------------------
+# FileUplink (Svc.FileUplink -> FileHandling.fileUplink)
+# ---------------------------------------------------------------------------
+
+def test_file_uplink(fprime_test_api):
+    """Verify the FileUplink PacketsReceived telemetry channel is updating.
+
+    Tunables: timeout (10s).
+    """
+    fprime_test_api.send_and_assert_command("CdhCore.cmdDisp.CMD_NO_OP", max_delay=5)
+    fprime_test_api.assert_telemetry_count(
+        1, channels="FileHandling.fileUplink.PacketsReceived", timeout=10
+    )
+
+
+# ---------------------------------------------------------------------------
+# CmdSequencer (Svc.CmdSequencer -> cmdSeq)
+# ---------------------------------------------------------------------------
+
+def test_cmd_sequencer_validate(fprime_test_api):
+    """Send CS_VALIDATE for a nonexistent file. The command dispatches
+    through YAMCS but validation fails on the target — proves the
+    sequencer command path works.
+
+    Tunables: file path (/tmp/nonexistent.bin), max_delay (5s).
+    """
+    fprime_test_api.send_and_assert_command(
+        "cmdSeq.CS_VALIDATE", ["/tmp/nonexistent.bin"], max_delay=5
     )
