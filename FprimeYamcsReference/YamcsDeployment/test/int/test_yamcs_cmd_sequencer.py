@@ -52,15 +52,15 @@ def test_seqgen(fprime_test_api):
     assert result2.returncode == 0, f"fprime-seqgen failed:\n{result2.stdout}\n{result2.stderr}"
 
     yamcs_client = fprime_test_api.pipeline.client_socket
-    result = yamcs_client.upload_file(str(bin_file), "/tmp/ref_test_seq.bin", timeout=60)
+    result = yamcs_client.upload_file(str(bin_file), "/tmpref_test_seq.bin", timeout=60)
     assert "COMPLETED" in str(result.state), f"Upload ref_test_seq.bin failed: {result.state}"
 
-    result = yamcs_client.upload_file(str(bin_wait_file), "/tmp/ref_test_seq_wait.bin", timeout=60)
+    result = yamcs_client.upload_file(str(bin_wait_file), "/tmpref_test_seq_wait.bin", timeout=60)
     assert "COMPLETED" in str(result.state), f"Upload ref_test_seq_wait.bin failed: {result.state}"
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_RUN",
-        args=["/tmp/ref_test_seq.bin", "BLOCK"],
+        args=["/tmpref_test_seq.bin", "BLOCK"],
         max_delay=5,
     )
 
@@ -71,13 +71,13 @@ def test_seqgen(fprime_test_api):
 def test_send_seq(fprime_test_api):
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_VALIDATE",
-        ["/tmp/ref_test_seq.bin"],
+        [".ref_test_seq.bin"],
         max_delay=10,
     )
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_RUN",
-        ["/tmp/ref_test_seq.bin", "BLOCK"],
+        [".ref_test_seq.bin", "BLOCK"],
         max_delay=5,
     )
 
@@ -100,7 +100,7 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_RUN",
-        ["/tmp/ref_test_seq.bin", "NO_BLOCK"],
+        ["ref_test_seq.bin", "NO_BLOCK"],
         max_delay=5,
     )
 
@@ -120,7 +120,7 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_VALIDATE",
-        ["/tmp/ref_test_seq.bin"],
+        ["ref_test_seq.bin"],
         max_delay=10,
     )
 
@@ -138,7 +138,7 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_RUN",
-        ["/tmp/ref_test_seq_wait.bin", "NO_BLOCK"],
+        ["ref_test_seq_wait.bin", "NO_BLOCK"],
         max_delay=5,
     )
 
@@ -171,11 +171,11 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + ".RemoveFile",
-        ["/tmp/ref_test_seq.bin", True],
+        ["ref_test_seq.bin", True],
         max_delay=15,
     )
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + ".RemoveFile",
-        ["/tmp/ref_test_seq_wait.bin", True],
+        ["ref_test_seq_wait.bin", True],
         max_delay=15,
     )
