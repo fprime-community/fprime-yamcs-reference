@@ -37,17 +37,19 @@ def test_seqgen(fprime_test_api):
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + ".CS_AUTO", max_delay=10
     )
 
-    assert subprocess.run([
+    result1 = subprocess.run([
         "fprime-seqgen",
         "--dictionary", str(fprime_test_api.dictionaries.dictionary_path),
         str(seq_file), str(bin_file),
-    ]).returncode == 0, "Failed to run fprime-seqgen on test_seq_new.seq"
+    ], capture_output=True, text=True)
+    assert result1.returncode == 0, f"fprime-seqgen failed:\n{result1.stdout}\n{result1.stderr}"
 
-    assert subprocess.run([
+    result2 = subprocess.run([
         "fprime-seqgen",
         "-d", str(fprime_test_api.dictionaries.dictionary_path),
         str(seq_wait_file), str(bin_wait_file),
-    ]).returncode == 0, "Failed to run fprime-seqgen on test_seq_wait_new.seq"
+    ], capture_output=True, text=True)
+    assert result2.returncode == 0, f"fprime-seqgen failed:\n{result2.stdout}\n{result2.stderr}"
 
     yamcs_client = fprime_test_api.pipeline.client_socket
     result = yamcs_client.upload_file(str(bin_file), "/tmp/ref_test_seq.bin", timeout=60)
