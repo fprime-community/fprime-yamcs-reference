@@ -1,5 +1,3 @@
-"""YAMCS transport integration tests for YamcsDeployment."""
-
 import time
 from enum import Enum
 

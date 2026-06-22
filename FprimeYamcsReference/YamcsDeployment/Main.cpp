@@ -13,6 +13,8 @@
 #include <getopt.h>
 // Used for printf functions
 #include <cstdlib>
+// Used for printf functions (for real)
+#include <cstdio>
 
 /**
  * \brief print command line help message

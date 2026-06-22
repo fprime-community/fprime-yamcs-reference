@@ -19,7 +19,7 @@ telemetry packets YamcsDeploymentPackets {
     ComCcsds.commsBufferManager.TotalBuffs
     ComCcsds.commsBufferManager.CurrBuffs
     ComCcsds.commsBufferManager.HiBuffs
-    CdhCore.tlmSend.SendLevel
+    #CdhCore.tlmSend.SendLevel
 
     FprimeYamcsReference.rateGroup1.RgMaxTime
     FprimeYamcsReference.rateGroup2.RgMaxTime
@@ -163,4 +163,7 @@ telemetry packets YamcsDeploymentPackets {
 
 } omit {
   CdhCore.cmdDisp.CommandErrors
+  CdhCore.tlmSend.SectionEnabled
+  CdhCore.tlmSend.GroupConfigs
+  DataProducts.dpBufferAccumulator.BA_NumQueuedBuffers
 }
