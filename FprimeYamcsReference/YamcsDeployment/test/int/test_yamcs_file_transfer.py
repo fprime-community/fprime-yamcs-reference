@@ -47,7 +47,7 @@ def test_yamcs_downlink_file(fprime_test_api):
     yamcs_client = fprime_test_api.pipeline.client_socket
     result = yamcs_client.download_file(tmp_file.name, timeout=30)
 
-    assert "COMPLETED" in str(result.state), f"Download failed: {result.state}"
+    assert "COMPLETED" in str(result.state), f"Download failed: {result.stdout}\n{result.stderr}"
 
     storage = yamcs_client.yamcs.get_storage_client()
     object_name = tmp_file.name.split("/")[-1]
@@ -55,7 +55,7 @@ def test_yamcs_downlink_file(fprime_test_api):
         bucket_name="fprimeFilesIn",
         object_name=object_name,
     )
-    assert data.decode() == TEST_DATA
+    assert data.decode() == TEST_DATA, f"Failure: {result.stdout}\n{result.stderr}"
 
     os.unlink(tmp_file.name)
 
