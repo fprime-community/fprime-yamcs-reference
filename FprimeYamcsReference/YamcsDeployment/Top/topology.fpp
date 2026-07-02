@@ -13,12 +13,12 @@ module FprimeYamcsReference {
   topology YamcsDeployment {
 
   # ----------------------------------------------------------------------
-  # Subtopology imports
+  # Subtopology instances
   # ----------------------------------------------------------------------
-    import CdhCore.Subtopology
-    import ComCcsds.Subtopology
-    import DataProducts.Subtopology
-    import FileHandling.Subtopology
+    instance CdhCore.Subtopology
+    instance ComCcsds.Subtopology
+    instance DataProducts.Subtopology
+    instance FileHandling.Subtopology
     
   # ----------------------------------------------------------------------
   # Instances used in the topology
@@ -57,43 +57,43 @@ module FprimeYamcsReference {
 
     connections ComCcsds_CdhCore {
       # Core events and telemetry to communication queue
-      CdhCore.events.PktSend -> ComCcsds.comQueue.comPacketQueueIn[ComCcsds.Ports_ComPacketQueue.EVENTS]
-      CdhCore.tlmSend.PktSend -> ComCcsds.comQueue.comPacketQueueIn[ComCcsds.Ports_ComPacketQueue.TELEMETRY]
+      CdhCore.Subtopology.eventsPktSend -> ComCcsds.Subtopology.comPacketQueueIn[ComCcsds.Ports_ComPacketQueue.EVENTS]
+      CdhCore.Subtopology.tlmSendPktSend -> ComCcsds.Subtopology.comPacketQueueIn[ComCcsds.Ports_ComPacketQueue.TELEMETRY]
 
       # Router to Command Dispatcher
-      ComCcsds.fprimeRouter.commandOut -> CdhCore.cmdDisp.seqCmdBuff
-      CdhCore.cmdDisp.seqCmdStatus -> ComCcsds.fprimeRouter.cmdResponseIn
-      
+      ComCcsds.Subtopology.commandOut -> CdhCore.Subtopology.seqCmdBuff
+      CdhCore.Subtopology.seqCmdStatus -> ComCcsds.Subtopology.cmdResponseIn
+
     }
 
     connections ComCcsds_FileHandling {
       # File Downlink to Communication Queue
-      FileHandling.fileDownlink.bufferSendOut -> ComCcsds.comQueue.bufferQueueIn[ComCcsds.Ports_ComBufferQueue.FILE]
-      ComCcsds.comQueue.bufferReturnOut[ComCcsds.Ports_ComBufferQueue.FILE] -> FileHandling.fileDownlink.bufferReturn
+      FileHandling.Subtopology.fileDownlinkBufferSendOut -> ComCcsds.Subtopology.bufferQueueIn[ComCcsds.Ports_ComBufferQueue.FILE]
+      ComCcsds.Subtopology.bufferReturnOut[ComCcsds.Ports_ComBufferQueue.FILE] -> FileHandling.Subtopology.fileDownlinkBufferReturn
 
       # Router to File Uplink
-      ComCcsds.fprimeRouter.fileOut -> FileHandling.fileUplink.bufferSendIn
-      FileHandling.fileUplink.bufferSendOut -> ComCcsds.fprimeRouter.fileBufferReturnIn
+      ComCcsds.Subtopology.fileUplinkOut -> FileHandling.Subtopology.fileUplinkBufferSendIn
+      FileHandling.Subtopology.fileUplinkBufferSendOut -> ComCcsds.Subtopology.fileUplinkReturnIn
     }
 
     connections Communications {
       # ComDriver buffer allocations
-      comDriver.allocate      -> ComCcsds.commsBufferManager.bufferGetCallee
-      comDriver.deallocate    -> ComCcsds.commsBufferManager.bufferSendIn
-      
+      comDriver.allocate      -> ComCcsds.Subtopology.commsBufferGetCallee
+      comDriver.deallocate    -> ComCcsds.Subtopology.commsBufferSendIn
+
       # ComDriver <-> ComStub (Uplink)
-      comDriver.$recv                     -> ComCcsds.comStub.drvReceiveIn
-      ComCcsds.comStub.drvReceiveReturnOut -> comDriver.recvReturnIn
-      
+      comDriver.$recv                     -> ComCcsds.Subtopology.drvReceiveIn
+      ComCcsds.Subtopology.drvReceiveReturnOut -> comDriver.recvReturnIn
+
       # ComStub <-> ComDriver (Downlink)
-      ComCcsds.comStub.drvSendOut      -> comDriver.$send
-      comDriver.ready         -> ComCcsds.comStub.drvConnected
+      ComCcsds.Subtopology.drvSendOut      -> comDriver.$send
+      comDriver.ready         -> ComCcsds.Subtopology.drvConnected
     }
 
     connections FileHandling_DataProducts {
       # Data Products to File Downlink
-      DataProducts.dpCat.fileOut -> FileHandling.fileDownlink.SendFile
-      FileHandling.fileDownlink.FileComplete -> DataProducts.dpCat.fileDone
+      DataProducts.Subtopology.dpCatFileOut -> FileHandling.Subtopology.fileDownlinkSendFile
+      FileHandling.Subtopology.fileDownlinkFileComplete -> DataProducts.Subtopology.dpCatFileDone
     }
 
     connections RateGroups {
@@ -102,13 +102,13 @@ module FprimeYamcsReference {
 
       # Rate group 1
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup1] -> rateGroup1.CycleIn
-      rateGroup1.RateGroupMemberOut[0] -> CdhCore.tlmSend.Run
-      rateGroup1.RateGroupMemberOut[1] -> FileHandling.fileDownlink.Run
+      rateGroup1.RateGroupMemberOut[0] -> CdhCore.Subtopology.tlmSendRun
+      rateGroup1.RateGroupMemberOut[1] -> FileHandling.Subtopology.fileDownlinkRun
       rateGroup1.RateGroupMemberOut[2] -> systemResources.run
-      rateGroup1.RateGroupMemberOut[3] -> ComCcsds.comQueue.run
-      rateGroup1.RateGroupMemberOut[4] -> ComCcsds.aggregator.timeout
-      rateGroup1.RateGroupMemberOut[5] -> FileHandling.fileManager.schedIn
-      rateGroup1.RateGroupMemberOut[6] -> CdhCore.cmdDisp.run
+      rateGroup1.RateGroupMemberOut[3] -> ComCcsds.Subtopology.comQueueRun
+      rateGroup1.RateGroupMemberOut[4] -> ComCcsds.Subtopology.aggregatorTimeout
+      rateGroup1.RateGroupMemberOut[5] -> FileHandling.Subtopology.fileManagerSchedIn
+      rateGroup1.RateGroupMemberOut[6] -> CdhCore.Subtopology.cmdDispRun
 
       # Rate group 2
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup2] -> rateGroup2.CycleIn
@@ -116,17 +116,17 @@ module FprimeYamcsReference {
 
       # Rate group 3
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup3] -> rateGroup3.CycleIn
-      rateGroup3.RateGroupMemberOut[0] -> CdhCore.$health.Run
-      rateGroup3.RateGroupMemberOut[1] -> ComCcsds.commsBufferManager.schedIn
-      rateGroup3.RateGroupMemberOut[2] -> DataProducts.dpBufferManager.schedIn
-      rateGroup3.RateGroupMemberOut[3] -> DataProducts.dpWriter.schedIn
-      rateGroup3.RateGroupMemberOut[4] -> DataProducts.dpMgr.schedIn
+      rateGroup3.RateGroupMemberOut[0] -> CdhCore.Subtopology.healthRun
+      rateGroup3.RateGroupMemberOut[1] -> ComCcsds.Subtopology.bufferManagerSchedIn
+      rateGroup3.RateGroupMemberOut[2] -> DataProducts.Subtopology.dpBufferManagerSchedIn
+      rateGroup3.RateGroupMemberOut[3] -> DataProducts.Subtopology.dpWriterSchedIn
+      rateGroup3.RateGroupMemberOut[4] -> DataProducts.Subtopology.dpMgrSchedIn
     }
 
     connections CdhCore_cmdSeq {
       # Command Sequencer
-      cmdSeq.comCmdOut -> CdhCore.cmdDisp.seqCmdBuff
-      CdhCore.cmdDisp.seqCmdStatus -> cmdSeq.cmdResponseIn
+      cmdSeq.comCmdOut -> CdhCore.Subtopology.seqCmdBuff
+      CdhCore.Subtopology.seqCmdStatus -> cmdSeq.cmdResponseIn
     }
 
     connections YamcsDeployment {
