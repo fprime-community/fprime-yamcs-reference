@@ -378,7 +378,7 @@ def test_seqgen(fprime_test_api):
 
     result2 = subprocess.run([
         "fprime-seqgen",
-        "-d", str("/Users/yuktiv/fprime-yamcs-reference/build-artifacts/Darwin/FprimeYamcsReference_YamcsDeployment"),
+        "--dictionary", str(fprime_test_api.dictionaries.dictionary_path),
         str(seq_wait_file), str(bin_wait_file),
     ], capture_output=True, text=True)
     assert result2.returncode == 0, f"fprime-seqgen failed:\n{result2.stdout}\n{result2.stderr}"
