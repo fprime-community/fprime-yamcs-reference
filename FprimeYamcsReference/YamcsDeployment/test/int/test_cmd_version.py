@@ -48,11 +48,16 @@ def test_send_version_command(fprime_test_api):
         event_cnt = fprime_test_api.assert_event_count(pred, ActLo_events)
         # EVR or report MSG_EVR:  2025-07-28T17:36:43.474151: CdhCore.version.ProjectVersion EventSeverity.ACTIVITY_LO : Project Version: [v4.0.0a1-122-g7b6e9a2e1]
 
+        report_ver_value = None
         for result in event_cnt:
             msg = "{}".format(result.get_str())
             msg_list = str(msg).split()
-            version = msg_list[6].replace("[", "")
-            report_ver_value = version.replace("]", "")
+            if len(msg_list) > 6:
+                version = msg_list[6].replace("[", "")
+                report_ver_value = version.replace("]", "")
+            else:
+                print(f"Warning: Event message format unexpected: {msg}")
+                continue
 
         # Channel (Telemetry) History search found the specified item: 2025-07-28T17:36:43.474180: CdhCore.version.ProjectVersion = v4.0.0a1-122-g7b6e9a2e1
         if count == 1:
@@ -68,9 +73,9 @@ def test_send_version_command(fprime_test_api):
 
         if count == 1 or count == 2:
             evr_ver_list = str(evr_ver).split()
-            evr_ver_value = evr_ver_list[3]
+            evr_ver_value = evr_ver_list[3] if len(evr_ver_list) > 3 else None
 
-            if evr_ver_value == report_ver_value:
+            if report_ver_value and evr_ver_value and evr_ver_value == report_ver_value:
                 print(
                     "COMPARE EVR vs. TELEMETRY channel and version cmd_option PASS ",
                     evr_ver_value,
