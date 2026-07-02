@@ -108,7 +108,7 @@ module FprimeYamcsReference {
       rateGroup1.RateGroupMemberOut[3] -> ComCcsds.comQueue.run
       rateGroup1.RateGroupMemberOut[4] -> ComCcsds.aggregator.timeout
       rateGroup1.RateGroupMemberOut[5] -> FileHandling.fileManager.schedIn
-      rateGroup1.RateGroupMemberOut[6] -> CdhCore.cmdDisp.run
+      rateGroup1.RateGroupMemberOut[6] -> CdhCore.cmdDispRun
 
       # Rate group 2
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup2] -> rateGroup2.CycleIn
