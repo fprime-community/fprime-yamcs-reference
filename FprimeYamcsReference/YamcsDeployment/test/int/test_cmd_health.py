@@ -118,42 +118,42 @@ def test_send_health_command(fprime_test_api):
     # expected trigger warning hi
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(10)
     fprime_test_api.send_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "AppendFile",
-        ["/tmp/2MiB.txt", "/tmp/2MiB.txt"],
+        ["/tmp/1MiB.txt", "/tmp/2MiB.txt"],
     )
     time.sleep(120)
 
@@ -163,8 +163,10 @@ def test_send_health_command(fprime_test_api):
     )
     fprime_test_api.assert_telemetry(WarnHi_error, timeout=5)
 
-    # Cleanup directory
-    fprime_test_api.send_command(
+    # Cleanup, and drain the fileManager queue so later tests are not blocked
+    # behind the queued appends
+    fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveFile",
         ["/tmp/2MiB.txt", True],
+        timeout=300,
     )
