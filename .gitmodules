@@ -1,4 +1,4 @@
 [submodule "lib/fprime"]
 	path = lib/fprime
-	url = https://github.com/nasa/fprime.git
-	branch = devel
+	url = https://github.com/yvijay99/fprime.git
+	branch = YAMCSCI
