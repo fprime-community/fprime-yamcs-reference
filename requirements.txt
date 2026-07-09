@@ -2,7 +2,7 @@
 # -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.1.1/requirements.txt
 
 yamcs-client==1.12.1
-fprime-xtce==0.1.2
+fprime-xtce @ git+https://github.com/yvijay99/fprime-xtce.git@yamcsPOC
 fprime-yamcs @ git+https://github.com/yvijay99/fprime-yamcs.git@yamcsPOC
 fprime-gds @ git+https://github.com/yvijay99/fprime-gds.git@yamcsPOC
 
