@@ -64,12 +64,4 @@ def test_downlink_file(fprime_test_api):
         [str(tmp_file_in.name), str(output_filename)],
     )
 
-    # For YAMCS transport, packet-based file downlink is not yet implemented
-    # YAMCS uses structured file transfer service instead of raw packet reassembly
-    # Skip this test when using YAMCS
-    yamcs_client = fprime_test_api.pipeline.client_socket
-    if hasattr(yamcs_client, 'yamcs'):
-        import pytest
-        pytest.skip("Packet-based file downlink not implemented for YAMCS transport")
-
     assert output_file.read_text() == TEST_DATA
