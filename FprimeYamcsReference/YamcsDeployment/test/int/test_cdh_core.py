@@ -59,27 +59,20 @@ def test_command_and_event_with_many_args(fprime_test_api: IntegrationTestAPI):
 def test_telemetry_update(fprime_test_api: IntegrationTestAPI):
     """Test that we can receive telemetry updates with expected values"""
 
+    # Enable all telemetry packet groups so CommandsDispatched is emitted
+    fprime_test_api.set_tlm_packet_level(3)
+
     cmd_dispatched_channel = fprime_test_api.get_telemetry_pred("CommandsDispatched")
 
     # Wait for telemetry update with expected values
     begin_result = fprime_test_api.await_telemetry(cmd_dispatched_channel, timeout=3)
     begin_tlm_val = begin_result.val_obj.val
 
-    # Capture history position before sending command to avoid finding stale cached telemetry
-    start = fprime_test_api.get_telemetry_test_history().size()
-
     # Send no op to increase the count of commands dispatched
-    fprime_test_api.send_command(
-        f"{fprime_test_api.get_mnemonic('Svc.CommandDispatcher')}.CMD_NO_OP"
-    )
-
-    # Wait for telemetry with value > begin_tlm_val from the point after command was sent
-    from fprime_gds.common.testing_fw import predicates
-    end_result = fprime_test_api.await_telemetry(
-        cmd_dispatched_channel,
-        start=start,
-        value=predicates.greater_than(begin_tlm_val),
-        timeout=5
+    end_result = fprime_test_api.send_and_await_telemetry(
+        f"{fprime_test_api.get_mnemonic('Svc.CommandDispatcher')}.CMD_NO_OP",
+        channels=cmd_dispatched_channel,
+        timeout=3,
     )
     # Assert that the telemetry value has increased by 1 after sending the command
     assert end_result.val_obj.val == begin_tlm_val + 1

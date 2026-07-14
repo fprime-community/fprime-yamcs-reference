@@ -164,17 +164,18 @@ def test_seqgen(fprime_test_api):
         == 0
     ), "Failed to run fprime-seqgen"
 
-    # uplink ref_test_seq.bin and ref_test_seq_wait.bin via YAMCS file transfer
-    yamcs_client = fprime_test_api.pipeline.client_socket
-    yamcs_client.upload_file("ref_test_seq.bin", "ref_test_seq.bin", timeout=100)
-    yamcs_client.upload_file(
-        "ref_test_seq_wait.bin", "ref_test_seq_wait.bin", timeout=100
+    # uplink ref_test_seq.bin and ref_test_seq_wait.bin
+    fprime_test_api.uplink_file_and_await_completion(
+        "ref_test_seq.bin", "/tmp/ref_test_seq.bin", timeout=100
+    )
+    fprime_test_api.uplink_file_and_await_completion(
+        "ref_test_seq_wait.bin", "/tmp/ref_test_seq_wait.bin", timeout=100
     )
 
     # execute sequence
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_RUN",
-        args=["ref_test_seq.bin", "BLOCK"],
+        args=["/tmp/ref_test_seq.bin", "BLOCK"],
         max_delay=5,
     )
 
@@ -199,13 +200,13 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_VALIDATE",
-        ["ref_test_seq.bin"],
+        ["/tmp/ref_test_seq.bin"],
         max_delay=10,
     )
     # sequence execute_2 auto
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_RUN",
-        ["ref_test_seq.bin", "BLOCK"],
+        ["/tmp/ref_test_seq.bin", "BLOCK"],
         max_delay=5,
     )
 
@@ -237,7 +238,7 @@ def test_send_seq(fprime_test_api):
     # Load Sequence but not execute is current SEQ manual (will load sequence only)
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_RUN",
-        ["ref_test_seq.bin", "NO_BLOCK"],
+        ["/tmp/ref_test_seq.bin", "NO_BLOCK"],
         max_delay=5,
     )
 
@@ -262,7 +263,7 @@ def test_send_seq(fprime_test_api):
 
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_VALIDATE",
-        ["ref_test_seq.bin"],
+        ["/tmp/ref_test_seq.bin"],
         max_delay=10,
     )
 
@@ -286,7 +287,7 @@ def test_send_seq(fprime_test_api):
     # Load Sequence but not execute is current SEQ manual (will load sequence only)
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.CmdSequencer") + "." + "CS_RUN",
-        ["ref_test_seq_wait.bin", "NO_BLOCK"],
+        ["/tmp/ref_test_seq_wait.bin", "NO_BLOCK"],
         max_delay=5,
     )
 
@@ -327,12 +328,12 @@ def test_send_seq(fprime_test_api):
     # cleanup sequence files (sequence create local and uplink files)
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveFile",
-        ["ref_test_seq.bin", True],
+        ["/tmp/ref_test_seq.bin", True],
         max_delay=15,
     )
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + "." + "RemoveFile",
-        ["ref_test_seq_wait.bin", True],
+        ["/tmp/ref_test_seq_wait.bin", True],
         max_delay=15,
     )
     ######    ######    ######
