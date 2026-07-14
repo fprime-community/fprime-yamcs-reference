@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m pytest test/int/test_yamcs_file_transfer.py -v)",
+      "Bash(pip list *)",
+      "Bash(python3 -m venv fprime-venv)",
+      "Bash(git submodule *)",
+      "Bash(git pull *)",
+      "Bash(kill -9 18050 15677 18049 15673)",
+      "Bash(/Users/yuktiv/fprime-yamcs-reference/fprime-venv/bin/fpp-to-cpp --version)",
+      "Bash(/Users/yuktiv/fprime-yamcs-reference/fprime-venv/lib/python3.14/site-packages/fprime_fpp/fpp --help)",
+      "Bash(/Users/yuktiv/fprime-yamcs-reference/fprime-venv/lib/python3.14/site-packages/fprime_fpp/fpp check *)",
+      "Bash(timeout 30 /Users/yuktiv/fprime-yamcs-reference/fprime-venv/lib/python3.14/site-packages/fprime_fpp/fpp to-cpp -d /tmp/test-fpp-output /Users/yuktiv/fprime-yamcs-reference/FprimeYamcsReference/YamcsDeployment/Top/instances.fpp)",
+      "Bash(gtimeout 30 /Users/yuktiv/fprime-yamcs-reference/fprime-venv/lib/python3.14/site-packages/fprime_fpp/fpp to-cpp -d /tmp/test-fpp-output /Users/yuktiv/fprime-yamcs-reference/FprimeYamcsReference/YamcsDeployment/Top/instances.fpp)",
+      "Bash(echo \"Command timed out or failed: $?\")",
+      "Bash(git -C lib/fprime log --oneline -1)",
+      "Bash(git -C lib/fprime log --oneline -10)",
+      "Bash(git -C lib/fprime branch -a)",
+      "Bash(git -C lib/fprime remote -v)",
+      "Bash(git -C lib/fprime status)",
+      "Bash(rm -rf build-fprime-automatic-native)",
+      "Bash(fprime-util generate *)",
+      "Bash(ninja -v all)",
+      "Bash(tee /tmp/build-log.txt)",
+      "Bash(kill -9 23268)",
+      "Bash(fprime-util build *)",
+      "Bash(kill -9 29865)",
+      "Bash(cp FprimeYamcsReference/YamcsDeployment/Top/YamcsDeploymentPackets.fppi FprimeYamcsReference/YamcsDeployment/Top/YamcsDeploymentPackets.fppi.backup)",
+      "Bash(awk '{print $2, $3, $11}')",
+      "Bash(python -c \"import sys; sys.path.append\\('fprime-venv/lib/python3.14/site-packages'\\); import fprime_gds; print\\(fprime_gds.__file__\\)\")",
+      "Bash(python -c \"from fprime_gds.executables.cli import StandardPipelineParser; p = StandardPipelineParser\\(\\); args = p.get_arguments\\(\\); print\\([k for k in args.keys\\(\\) if 'yamcs' in str\\(k\\).lower\\(\\)]\\)\")",
+      "Bash(python -c \"from fprime_gds.executables.cli import StandardPipelineParser; import json; p = StandardPipelineParser\\(\\); args = p.get_arguments\\(\\); transport_args = {k: v for k, v in args.items\\(\\) if 'transport' in str\\(k\\).lower\\(\\) or 'connection' in str\\(k\\).lower\\(\\) or 'comm' in str\\(k\\).lower\\(\\)}; print\\(json.dumps\\({str\\(k\\): str\\(v\\) for k, v in transport_args.items\\(\\)}, indent=2\\)\\)\")",
+      "Bash(python -c \"from fprime_gds.executables.cli import MiddleWareParser; m = MiddleWareParser\\(\\); import pprint; pprint.pprint\\(m.get_arguments\\(\\)\\)\")",
+      "Bash(pytest --help)",
+      "Bash(pytest lib/fprime/Svc/CmdSequencer/test/int/test_cmd_sequencer.py::test_seqgen --dictionary ./build-artifacts/aarch64-darwin/FprimeYamcsReference_YamcsDeployment/dict/YamcsDeploymentTopologyDictionary.json --deployment-config FprimeYamcsReference/YamcsDeployment/test/int/int_config.json --use-yamcs -xvs)"
+    ],
+    "additionalDirectories": [
+      "/Users/yuktiv/fprime-yamcs-reference/FprimeYamcsReference/YamcsDeployment/Top"
+    ]
+  }
+}
