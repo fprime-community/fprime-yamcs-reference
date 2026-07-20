@@ -2,9 +2,9 @@
 # -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.1.1/requirements.txt
 
 yamcs-client==1.12.1
-fprime-gds>=4.1.2
-fprime-xtce
-fprime-yamcs>=0.1.3
+fprime-gds>=4.2.2a3
+fprime-xtce>=0.1.3
+fprime-yamcs>=0.1.4
 
 # Local requirements:
 -r ./lib/fprime/requirements.txt
