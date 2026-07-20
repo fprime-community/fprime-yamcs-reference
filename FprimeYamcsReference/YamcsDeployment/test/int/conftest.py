@@ -10,9 +10,6 @@ import pytest
 import subprocess
 from pathlib import Path
 
-# Load fprime-gds pytest plugin for --use-yamcs and other test API flags
-pytest_plugins = ["fprime_gds.common.testing_fw.pytest_integration"]
-
 
 def find_fprime_location():
     """
