@@ -92,7 +92,7 @@ telemetry packets YamcsDeploymentPackets {
   }
 
  packet Version1 id 22 group 2 {
-   CdhCore.version.FrameworkVersion
+  CdhCore.version.FrameworkVersion
    CdhCore.version.ProjectVersion
  }
 
