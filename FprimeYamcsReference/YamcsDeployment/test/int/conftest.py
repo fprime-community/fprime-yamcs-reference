@@ -4,118 +4,83 @@ Shared pytest fixtures for FprimeYamcsReference integration tests.
 This module provides common fixtures for setting up test files
 that are required by integration test suites.
 """
-
+import logging
+import os
 import shutil
-import pytest
 import subprocess
 from pathlib import Path
+from typing import Optional
+
+import pytest
+
+logger = logging.getLogger(__name__)
+
+REQUIRED_TEST_FILES = ["test_seq.seq", "test_seq_wait.seq", "1MiB.txt"]
 
 
-def find_fprime_location():
-    """
-    Find the fprime repository location dynamically.
-
-    Searches in order:
-    1. lib/fprime submodule (if exists)
-    2. fprime-svc directory (CI artifact structure)
-    3. Git submodule path
-    4. Environment variable FPRIME_LOCATION
-    """
-    # Try relative path to submodule
+def find_fprime_location() -> Optional[Path]:
+    """Find fprime repository: git submodule → CI artifact → env var."""
     current_file = Path(__file__).resolve()
-    potential_submodule = current_file.parent.parent.parent.parent.parent / "lib" / "fprime"
-    if potential_submodule.exists() and (potential_submodule / "Svc").exists():
-        return potential_submodule
 
-    # Try CI artifact structure (fprime-svc directory)
-    # When CI copies artifacts, fprime Svc is at ./fprime-svc/
-    # which is actually lib/fprime/Svc, so we return a mock path
-    cwd = Path.cwd()
-    fprime_svc = cwd / "fprime-svc"
-    if fprime_svc.exists() and fprime_svc.is_dir():
-        # fprime-svc IS the Svc directory, so we need to return a fake parent
-        # that allows accessing fprime-svc as if it were lib/fprime/Svc
-        # We'll return cwd and adjust the source_dir logic below
-        return fprime_svc  # Special case: return Svc directory directly
-
-    # Try finding via git submodule
+    # Try git submodule
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            cwd=current_file.parent,
-            check=True
+            capture_output=True, text=True, cwd=current_file.parent, check=True, timeout=5
         )
-        repo_root = Path(result.stdout.strip())
-        fprime_path = repo_root / "lib" / "fprime"
-        if fprime_path.exists() and (fprime_path / "Svc").exists():
+        fprime_path = Path(result.stdout.strip()) / "lib" / "fprime"
+        if (fprime_path / "Svc").exists():
             return fprime_path
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         pass
 
-    # Check environment variable
-    import os
-    if "FPRIME_LOCATION" in os.environ:
-        fprime_path = Path(os.environ["FPRIME_LOCATION"])
-        if fprime_path.exists() and (fprime_path / "Svc").exists():
-            return fprime_path
+    # Try CI artifact (fprime-svc directory)
+    fprime_svc = Path.cwd() / "fprime-svc"
+    if fprime_svc.is_dir() and (fprime_svc / "FileUplink").exists():
+        return fprime_svc
+
+    # Try environment variable
+    fprime_env = os.environ.get("FPRIME_LOCATION")
+    if fprime_env and (Path(fprime_env) / "Svc").exists():
+        return Path(fprime_env)
 
     return None
 
 
+def get_test_file_dir(fprime_lib: Path) -> Optional[Path]:
+    """Get source directory for test files (handles both CI and normal structures)."""
+    # CI artifact: fprime_lib IS the Svc directory
+    if (fprime_lib / "FileUplink").is_dir():
+        return fprime_lib / "FileUplink" / "test" / "int"
+    
+    # Normal: fprime_lib is fprime root
+    source = fprime_lib / "Svc" / "FileUplink" / "test" / "int"
+    return source if source.is_dir() else None
+
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_files():
-    """
-    Copy test files to /tmp/ for use by integration tests.
-
-    Many integration tests (FileManager, FileDownlink, etc.) expect
-    test files to exist in /tmp/ on the target filesystem.
-    """
-    # Find fprime location dynamically
+    """Copy test files from fprime to /tmp/ for integration tests."""
     fprime_lib = find_fprime_location()
-
-    if fprime_lib is None:
-        print("Warning: Could not locate fprime repository. Test files will not be copied.")
+    if not fprime_lib:
+        logger.warning("Could not locate fprime repository")
         yield
         return
 
-    print(f"Found fprime location: {fprime_lib}")
+    source_dir = get_test_file_dir(fprime_lib)
+    if not source_dir:
+        logger.warning(f"Test files not found at: {source_dir}")
+        yield
+        return
 
-    # Check if fprime_lib is the Svc directory directly (CI artifact case)
-    if (fprime_lib / "FileUplink").exists():
-        # fprime_lib is actually the Svc directory
-        source_dir = fprime_lib / "FileUplink" / "test" / "int"
-        print(f"Using CI artifact structure, source_dir: {source_dir}")
-    else:
-        # Normal case: fprime_lib is the fprime root
-        source_dir = fprime_lib / "Svc" / "FileUplink" / "test" / "int"
-        print(f"Using normal structure, source_dir: {source_dir}")
-
-    test_files = [
-        "test_seq.seq",
-        "test_seq_wait.seq",
-        "1MiB.txt",
-    ]
-
-    # Copy files to /tmp/ if they don't exist or are different
-    for filename in test_files:
+    for filename in REQUIRED_TEST_FILES:
         source = source_dir / filename
-        dest = Path("/tmp") / filename
-
         if source.exists():
             try:
-                shutil.copy2(source, dest)
-                print(f"Copied {source} -> {dest}")
+                shutil.copy2(source, Path("/tmp") / filename)
             except (IOError, PermissionError) as e:
-                print(f"Warning: Could not copy {filename} to /tmp/: {e}")
+                logger.warning(f"Failed to copy {filename}: {e}")
         else:
-            print(f"Warning: Source file {source} does not exist")
+            logger.warning(f"Source file not found: {source}")
 
     yield
-
-    # Cleanup is optional - comment out if you want files to persist
-    # for filename in test_files:
-    #     dest = Path("/tmp") / filename
-    #     if dest.exists():
-    #         dest.unlink()
