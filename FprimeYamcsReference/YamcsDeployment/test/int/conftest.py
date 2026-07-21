@@ -60,7 +60,15 @@ def get_test_file_dir(fprime_lib: Path) -> Optional[Path]:
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_files():
-    """Copy test files from fprime to /tmp/ for integration tests."""
+    """Pre-populate /tmp/ with test files for FileManager/FileDownlink tests.
+    
+    Assumes FSW and GDS run on same machine (local/CI testing). Copies files
+    to /tmp/ on the host, which FSW can then access as its /tmp/.
+    
+    Note: FileUplink test reads files directly from fprime repo and uploads
+    them TO /tmp/ on FSW. This fixture is redundant for FileUplink but needed
+    for standalone FileManager/FileDownlink test runs.
+    """
     fprime_lib = find_fprime_location()
     if not fprime_lib:
         logger.warning("Could not locate fprime repository")
@@ -69,17 +77,20 @@ def setup_test_files():
 
     source_dir = get_test_file_dir(fprime_lib)
     if not source_dir:
-        logger.warning(f"Test files not found at: {source_dir}")
+        logger.warning("Test files source directory not found")
         yield
         return
 
     for filename in REQUIRED_TEST_FILES:
         source = source_dir / filename
+        dest = Path("/tmp") / filename
+        
         if source.exists():
             try:
-                shutil.copy2(source, Path("/tmp") / filename)
+                shutil.copy2(source, dest)
+                logger.info(f"Pre-populated /tmp/{filename} for FSW tests")
             except (IOError, PermissionError) as e:
-                logger.warning(f"Failed to copy {filename}: {e}")
+                logger.warning(f"Failed to copy {filename} to /tmp/: {e}")
         else:
             logger.warning(f"Source file not found: {source}")
 
