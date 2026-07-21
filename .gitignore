@@ -17,6 +17,7 @@ build-fprime-*
 __pycache__/
 *.pyc
 *.pyo
+*.bin
 
 # YAMCS runtime data
 yamcs-data/
