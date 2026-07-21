@@ -11,10 +11,6 @@ from pathlib import Path
 
 def _await_file_manager_idle(fprime_test_api, timeout=600):
     """Flush the fileManager command queue before asserting on it.
-
-    Earlier tests (test_cmd_health) leave fileManager grinding through queued
-    multi-minute AppendFile commands. RemoveFile with ignoreErrors=True always
-    completes, so awaiting it guarantees the queue is drained.
     """
     fprime_test_api.send_and_assert_command(
         fprime_test_api.get_mnemonic("Svc.FileManager") + ".RemoveFile",
