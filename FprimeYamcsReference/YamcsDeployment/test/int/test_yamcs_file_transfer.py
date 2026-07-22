@@ -126,8 +126,12 @@ def test_yamcs_large_file_transfer(fprime_test_api):
         import pytest
         pytest.skip("Not using YAMCS transport")
 
-    # Use the existing 1MiB.txt file
-    source_file = "/tmp/1MiB.txt"
+    tmp_file = tempfile.NamedTemporaryFile(mode="wb", delete=False, dir="/tmp/")
+    tmp_file.write(b"\0" * (1024 * 1024))
+    tmp_file.flush()
+    source_file = tmp_file.name
+    tmp_file.close()
+
     destination = "/tmp/yamcs_large_file_test.txt"
 
     _await_file_manager_idle(fprime_test_api)
@@ -151,3 +155,4 @@ def test_yamcs_large_file_transfer(fprime_test_api):
         [destination],
         timeout=30,
     )
+    Path(source_file).unlink()
