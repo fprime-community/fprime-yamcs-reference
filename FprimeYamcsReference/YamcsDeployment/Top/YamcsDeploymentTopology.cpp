@@ -50,6 +50,9 @@ void configureTopology() {
 
     // Command sequencer needs to allocate memory to hold contents of command sequences
     cmdSeq.allocateBuffer(0, mallocator, 5 * 1024);
+
+    // Configure parameter database
+    FileHandling::prmDb.configure("PrmDb.dat");
 }
 
 void setupTopology(const TopologyState& state) {
