@@ -4,7 +4,7 @@
 yamcs-client==1.12.1
 fprime-gds==4.2.2a4
 fprime-xtce==0.1.3
-fprime-yamcs==0.1.4
+fprime-yamcs==0.1.5
 
 # Local requirements:
 -r ./lib/fprime/requirements.txt
