@@ -10,7 +10,7 @@ module FprimeYamcsReference {
     rateGroup3
   }
 
-  topology YamcsDeployment {
+  deployment topology YamcsDeployment {
 
   # ----------------------------------------------------------------------
   # Subtopology instances
