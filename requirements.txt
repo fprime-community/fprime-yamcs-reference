@@ -1,5 +1,5 @@
 # Source tag requirements:
-# -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.1.1/requirements.txt
+# -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.3.0/requirements.txt
 
 yamcs-client==1.12.1
 fprime-xtce==0.1.3
