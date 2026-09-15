@@ -1,10 +1,2 @@
-# Source tag requirements:
-# -r https://raw.githubusercontent.com/nasa/fprime/refs/tags/v4.3.0/requirements.txt
-
-yamcs-client==1.12.1
-fprime-xtce==0.1.3
-
-# Local requirements:
+# The framework pins fprime-gds, fprime-yamcs, yamcs-client and fprime-xtce; re-pinning them here conflicts.
 -r ./lib/fprime/requirements.txt
-
-# Packages newer than the framework pins live in overrides.txt; install it second.
