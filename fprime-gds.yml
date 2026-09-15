@@ -14,5 +14,9 @@
 
 
 command-line-options:
+  # Drv.Udp talks to YAMCS directly; without this fprime-yamcs defaults to its tcp-fast-server bridge
+  communication-selection: udp
   # 32-byte AES-256 key shared by the deployment's SdlsFileKeyManager and YAMCS (see README)
   yamcs-sdls-key-file: sdls.key
+  # Replaces the default -p/-a; -k is relative to the binary's directory (build-artifacts/<platform>/<deployment>/bin)
+  application-arguments: ["-p", "50000", "-a", "0.0.0.0", "-k", "../../../../sdls.key"]

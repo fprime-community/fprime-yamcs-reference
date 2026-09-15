@@ -1,0 +1,7 @@
+# Overrides of lib/fprime/requirements.txt pins; installed after requirements.txt
+# (CI: nasa/fprime-actions external-repository-setup installs this file when present).
+# fprime-yamcs>=0.2.1 needs fprime-gds>=4.4.0a3 (tcp-fast bridge, list-form application-arguments),
+# which conflicts with the framework's fprime-gds==4.3.0 pin if resolved together.
+fprime-gds==4.4.0a3
+# Release wheel required: git installs lack the prebuilt YAMCS plugin jar and fall back to a Maven/JDK build
+fprime-yamcs>=0.2.1
