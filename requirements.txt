@@ -1,4 +1,2 @@
-# The framework requirements carry every package this project needs, including fprime-gds,
-# fprime-yamcs, yamcs-client, and fprime-xtce. Do not pin them here: a second pin of the same
-# package conflicts with the framework's when the two files are resolved together.
+# The framework pins fprime-gds, fprime-yamcs, yamcs-client and fprime-xtce; re-pinning them here conflicts.
 -r ./lib/fprime/requirements.txt
