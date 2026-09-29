@@ -37,6 +37,10 @@ module ComCcsdsConfig {
 
     # Aggregator configuration constants
     module Aggregator {
+        @ Bytes of TM data field available to Svc.ComAggregator output, less the SDLS overhead inserted between
+        @ the aggregator and Svc.Ccsds.TmFramer: 2-byte SA index, 12-byte AES-GCM IV, 16-byte AES-GCM tag.
+        @ Svc.Ccsds.TmFramer asserts unless the SDLS output fills Svc.Ccsds.TmDataFieldSize exactly.
+        constant aggregationSize = Svc.Ccsds.TmDataFieldSize - Svc.Ccsds.SdlsSaIndexSize - 28
         @ Controls whether to span packets across transfer frames (see Svc.ComAggregator).
         @ Requires Svc.Ccsds.TmFramer as the transfer frame layer (sole consumer of FrameContext.firstHeaderPointer)
         @ and a ground deframer that reassembles spanned packets using the First Header Pointer.

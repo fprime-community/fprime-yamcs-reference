@@ -10,16 +10,11 @@ module ComCfg {
     @ Spacecraft ID (10 bits) for CCSDS Data Link layer
     dictionary constant SpacecraftId = 0x0044
 
-    @ Fixed size of CCSDS TM frames
-    dictionary constant TmFrameFixedSize = 1024  # Needs to be at least COM_BUFFER_MAX_SIZE + (2 * SpacePacketHeaderSize) + 1
+    @ Fixed size of CCSDS TM frames. The aggregate size is derived from this in ComCcsdsConfig.Aggregator.aggregationSize.
+    dictionary constant TmFrameFixedSize = 1024
 
     @ Upper Bound on Fixed size of CCSDS AOS frames
     constant AosMaxFrameFixedSize = 1536
-
-    @ Bytes of transfer-frame data field available to Svc.ComAggregator output, less the SDLS AES-GCM
-    @ overhead (2-byte SA index, 12-byte IV, 16-byte tag) inserted between the aggregator and Svc.Ccsds.TmFramer.
-    @ With packet spanning enabled this must not exceed 2046 (0x7FE), the TM First Header Pointer range; Svc.ComAggregator.configure() asserts otherwise.
-    constant AggregationSize = TmFrameFixedSize - 6 - 2 - 2 - 28  # TM header (6) + CRC (2) + SA index (2) + AES-GCM IV/tag (28)
 
     @ Packet Version Numbers are 3 bits with only 2 currently valid values
     dictionary enum Pvn : U8 {
@@ -50,10 +45,10 @@ module ComCfg {
     constant SaIndexUnset = 0xFFFF
 
     @ Packet type in the Space Packet Primary Header
-    enum SppPacketType: U8 {
-        SPP_TELEMETRY = 0,
-        SPP_COMMAND = 1
-    }
+    enum SppPacketType : U8 {
+        SPP_TELEMETRY = 0  @< Telemetry / data packet (downlink)
+        SPP_COMMAND   = 1  @< Telecommand packet (uplink)
+    } default SPP_TELEMETRY
 
     @ Type used to pass context info between components during framing/deframing
     struct FrameContext {
