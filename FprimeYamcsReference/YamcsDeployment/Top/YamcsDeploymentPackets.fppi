@@ -195,4 +195,6 @@ telemetry packets YamcsDeploymentPackets {
   CdhCore.tlmSend.GroupConfigs 
   DataProducts.dpBufferAccumulator.BA_NumQueuedBuffers
   cmdSeq.CS_CurrentSequence
+  FileHandling.prmDb.PrmFileLoadStatus
+  FileHandling.prmDb.PrmFileLoadRecords
 }
